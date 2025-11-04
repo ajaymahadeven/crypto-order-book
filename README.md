@@ -139,4 +139,4 @@ By enforcing code standards and best practices through Husky, Prettier, and ESLi
 
 ## License
 
-This project is licensed under the BSD 2-Clause License, as the `WS_URL` is private and owned by Low Observable Technology (https://lo.tech/).
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

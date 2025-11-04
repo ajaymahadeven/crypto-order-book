@@ -2,6 +2,7 @@
 import { WebSocket } from 'ws';
 import type { OrderBookData } from '~/types/interfaces/orderBookData';
 
+// @deprecated - using websocket-manager.ts instead
 /**
  * This module provides a function to connect to a WebSocket and retrieve real-time order book data.
  */

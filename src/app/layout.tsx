@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     keywords: siteConfig.keywords,
 
-    creator: 'thenameisajay - https://github.com/thenameisajay',
+    creator: 'Ajay Mahadeven - https://github.com/ajaymahadeven',
 };
 
 /**

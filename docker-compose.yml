@@ -1,7 +1,8 @@
 services:
     pgsql:
         container_name: pgsql_crypto-order-book
-        image: bitnami/postgresql:16-debian-12
+        image: postgres:18-trixie
+        shm_size: 128mb
         ports:
             - '5321:5432'
         environment:
@@ -9,14 +10,18 @@ services:
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
             POSTGRES_DB: ${POSTGRES_DB}
         volumes:
-            - ./pgdata:/bitnami/postgresql/data
+            - postgres_data:/var/lib/postgresql/data
         restart: unless-stopped
         networks:
             dockernet:
                 ipv4_address: 172.11.11.10
 
+volumes:
+    postgres_data:
+
 networks:
     dockernet:
+        driver: bridge
         ipam:
             driver: default
             config:

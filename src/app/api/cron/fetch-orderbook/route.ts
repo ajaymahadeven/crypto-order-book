@@ -52,9 +52,43 @@ export async function GET(request: Request) {
             `✅ Cron completed - saved ${savedCount}/${allData.length} coins`,
         );
 
+        // TODO: Cleanup old records to prevent database bloat
+        // Keep only the last 1000 records (adjustable based on needs)
+        console.log('🧹 Cleaning up old records...');
+
+        const totalRecords = await db.orderBookData.count();
+        const MAX_RECORDS = 1000; // Keep last 1000 records
+
+        if (totalRecords > MAX_RECORDS) {
+            // Get the timestamp of the 1000th most recent record
+            const cutoffRecord = await db.orderBookData.findMany({
+                orderBy: { timestamp: 'desc' },
+                skip: MAX_RECORDS - 1,
+                take: 1,
+                select: { timestamp: true },
+            });
+
+            if (cutoffRecord[0]) {
+                const deleted = await db.orderBookData.deleteMany({
+                    where: {
+                        timestamp: {
+                            lt: cutoffRecord[0].timestamp,
+                        },
+                    },
+                });
+
+                console.log(`🗑️  Deleted ${deleted.count} old records`);
+            }
+        } else {
+            console.log(
+                `✓ Database size OK (${totalRecords}/${MAX_RECORDS} records)`,
+            );
+        }
+
         return NextResponse.json({
             success: true,
             coinsUpdated: savedCount,
+            totalRecords,
             timestamp: new Date().toISOString(),
         });
     } catch (error) {

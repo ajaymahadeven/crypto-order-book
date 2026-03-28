@@ -1,20 +1,32 @@
 export const siteConfig = {
-    title: 'Order Book',
-    url: 'order-book-one.vercel.app',
+    name: 'Order Book',
+    title: 'Order Book — Real-time Crypto Bid/Ask Data',
+    url: 'https://order-book-one.vercel.app',
     description:
-        'This is a real-time order book visualization application for cryptocurrency trading. It uses a WebSocket connection to fetch live order book data from a mock API and displays the top 5 bids and asks for the selected cryptocurrency and exchange. The application is built using Next.js and tRPC for a TypeScript-based, type-safe implementation.',
+        'Real-time order book depth for BTC, ETH, XRP, LTC and DOGE. Live top-of-book bid/ask prices, spread, and daily stats. Built with Next.js, tRPC, and WebSockets.',
+    shortDescription: 'Real-time crypto order book depth.',
+    author: {
+        name: 'Ajay Mahadeven',
+        github: 'https://github.com/thenameisajay',
+    },
     links: {
         github: 'https://github.com/thenameisajay/order-book',
     },
     keywords: [
         'order book',
+        'crypto order book',
+        'bitcoin order book',
         'cryptocurrency',
-        'trading',
-        'real-time',
-        'visualization',
+        'bid ask spread',
+        'real-time trading data',
+        'BTC USD',
+        'ETH USD',
+        'depth chart',
+        'market data',
         'next.js',
         'trpc',
-        'typescript',
+        'websocket',
+        'open source',
     ],
 };
 

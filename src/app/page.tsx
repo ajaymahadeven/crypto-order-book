@@ -68,6 +68,12 @@ export default function Home() {
                             <p className="mt-1 text-sm text-muted-foreground">
                                 Real-time top-of-book across pairs
                             </p>
+                            <p className="mt-2 max-w-xl text-xs text-muted-foreground/60">
+                                Demo app — prices are simulated via a local
+                                WebSocket server and do not reflect live market
+                                data. For educational and portfolio purposes
+                                only.
+                            </p>
                         </div>
 
                         <div className="mb-6">

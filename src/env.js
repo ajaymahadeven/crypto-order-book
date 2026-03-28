@@ -11,6 +11,7 @@ export const env = createEnv({
         NODE_ENV: z
             .enum(['development', 'test', 'production'])
             .default('development'),
+        CRON_SECRET: z.string().optional(),
     },
 
     /**
@@ -29,6 +30,7 @@ export const env = createEnv({
     runtimeEnv: {
         DATABASE_URL: process.env.DATABASE_URL,
         NODE_ENV: process.env.NODE_ENV,
+        CRON_SECRET: process.env.CRON_SECRET,
         // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
     },
     /**

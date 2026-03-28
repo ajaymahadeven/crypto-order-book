@@ -4,27 +4,30 @@ import { wsManager } from '~/server/trpc/websocket-manager';
 import { OrderBookSchema } from '~/types/schemas/OrderBookSchema';
 import { TokenSchema } from '~/types/schemas/Token';
 
-const COIN_SYMBOL: Record<string, string> = {
-    'BTC/USD': 'BTC',
-    'ETH/USD': 'ETH',
-    'XRP/USD': 'XRP',
-    'LTC/USD': 'LTC',
-    'DOGE/USD': 'DOGE',
+const COIN_SUBREDDIT: Record<string, string> = {
+    'BTC/USD': 'Bitcoin',
+    'ETH/USD': 'ethereum',
+    'XRP/USD': 'Ripple',
+    'LTC/USD': 'litecoin',
+    'DOGE/USD': 'dogecoin',
 };
 
-interface CryptoCompareArticle {
-    id: string;
-    title: string;
-    source: string;
-    body: string;
-    url: string;
-    imageurl: string;
-    published_on: number;
-    source_info: { name: string };
+interface RedditPost {
+    data: {
+        id: string;
+        title: string;
+        selftext: string;
+        url: string;
+        permalink: string;
+        author: string;
+        created_utc: number;
+        score: number;
+        is_self: boolean;
+    };
 }
 
-interface CryptoCompareNewsResponse {
-    Data: CryptoCompareArticle[];
+interface RedditResponse {
+    data: { children: RedditPost[] };
 }
 
 export const orderBookRouter = createTRPCRouter({
@@ -181,26 +184,34 @@ export const orderBookRouter = createTRPCRouter({
     getCoinNews: publicProcedure
         .input(z.object({ coin: z.string() }))
         .query(async ({ input }) => {
-            const symbol = COIN_SYMBOL[input.coin];
-            if (!symbol) return [];
+            const subreddit = COIN_SUBREDDIT[input.coin];
+            if (!subreddit) return [];
 
-            const apiKey = process.env.CRYPTOCOMPARE_API_KEY ?? '';
-            const url = `https://min-api.cryptocompare.com/data/v2/news/?lang=EN&categories=${symbol}&sortOrder=latest${apiKey ? `&api_key=${apiKey}` : ''}`;
+            try {
+                const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=6&raw_json=1`;
+                const res = await fetch(url, {
+                    headers: { 'User-Agent': 'crypto-order-book/2.0' },
+                    next: { revalidate: 300 },
+                });
+                if (!res.ok) return [];
 
-            const res = await fetch(url, { next: { revalidate: 300 } });
-            if (!res.ok) return [];
+                const json = (await res.json()) as RedditResponse;
+                const posts = json.data?.children ?? [];
 
-            const json = (await res.json()) as CryptoCompareNewsResponse;
-            const articles = json.Data?.slice(0, 6) ?? [];
-
-            return articles.map((a) => ({
-                id: a.id,
-                title: a.title,
-                source: a.source_info?.name ?? a.source,
-                body: a.body.slice(0, 200),
-                url: a.url,
-                imageUrl: a.imageurl,
-                publishedOn: a.published_on,
-            }));
+                return posts.map((p) => ({
+                    id: p.data.id,
+                    title: p.data.title,
+                    source: `r/${subreddit}`,
+                    body: p.data.is_self ? p.data.selftext.slice(0, 200) : '',
+                    url: p.data.is_self
+                        ? `https://reddit.com${p.data.permalink}`
+                        : p.data.url,
+                    publishedOn: Math.floor(p.data.created_utc),
+                    score: p.data.score,
+                    author: p.data.author,
+                }));
+            } catch {
+                return [];
+            }
         }),
 });

@@ -1,92 +1,117 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { api } from '~/trpc/react';
 import type { OrderBookData } from '~/types/interfaces/orderBookData';
 
-import ErrorDisplay from '~/components/error-display/ErrorDisplay';
-import HeadBanner from '~/components/head-banner/HeadBanner';
-import LoadingDisplay from '~/components/loading-display/LoadingDisplay';
-import DuoTable from '~/components/order-table/DuoTable';
+import CoinDetailPanel from '~/components/coin-detail/CoinDetailPanel';
+import CoinFilterBar from '~/components/coin-filter/CoinFilterBar';
+import Header from '~/components/header/Header';
+import OrderBookTable from '~/components/order-book-table/OrderBookTable';
 
-const heading: string = 'Unlock the Power of Crypto Order Book Data';
-const description: string =
-    ' Our intuitive interface lets you seamlessly track and analyze market trends, empowering your trading decisions.';
+const ALL_COINS = ['BTC/USD', 'ETH/USD', 'XRP/USD', 'LTC/USD', 'DOGE/USD'];
 
-/**
- * The `Home` component is the main entry point of the application, displaying the order book data for cryptocurrencies.
- *
- * This component uses the `tRPC` API to fetch the order book data and renders it using the `DuoTable` component. If the data is not available or there is an error, it displays appropriate loading or error messages.
- *
- * The component also includes a `HeadBanner` component that displays a heading and description for the page.
- *
- * @returns {JSX.Element} The rendered `Home` component.
- */
 export default function Home() {
-    const [showDisclaimer, setShowDisclaimer] = useState(true);
+    const [activeCoins, setActiveCoins] = useState<string[]>([...ALL_COINS]);
+    const [refreshInterval, setRefreshInterval] = useState(1000);
+    const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
 
     const {
         data: orderBookData,
         refetch,
         isError,
     } = api.orderBook.getOrderBook.useQuery(undefined, {
-        refetchInterval: 1,
+        refetchInterval: refreshInterval,
     });
 
-    // Hide disclaimer once we have data
-    useEffect(() => {
-        if (
-            orderBookData &&
-            Array.isArray(orderBookData) &&
-            orderBookData.length > 0
-        ) {
-            setShowDisclaimer(false);
-        }
-    }, [orderBookData]);
+    const isConnected =
+        !isError && Array.isArray(orderBookData) && orderBookData.length > 0;
 
-    console.log('orderBookData', orderBookData);
-
-    if (!orderBookData && !isError) {
-        return (
-            <>
-                <HeadBanner heading={heading} description={description} />
-                <LoadingDisplay />
-            </>
+    const toggleCoin = (coin: string) => {
+        setActiveCoins((prev) =>
+            prev.includes(coin)
+                ? prev.filter((c) => c !== coin)
+                : [...prev, coin],
         );
-    }
+    };
 
-    const hasData =
-        orderBookData &&
-        Array.isArray(orderBookData) &&
-        orderBookData.length > 0;
+    const allData = Array.isArray(orderBookData)
+        ? (orderBookData as OrderBookData[])
+        : [];
+
+    const filtered = allData.filter((d) => activeCoins.includes(d.coin));
+
+    const selectedData = selectedCoin
+        ? allData.find((d) => d.coin === selectedCoin)
+        : undefined;
 
     return (
-        <>
-            <HeadBanner heading={heading} description={description} />
-            <div className="lg:py-30 flex py-10 md:py-24">
-                {!isError ? (
-                    <div className="w-full">
-                        {showDisclaimer && !hasData && (
-                            <div className="mb-4 rounded-md px-4 py-3 text-sm   font-bold text-green-800 transition-opacity duration-300">
-                                <p className="text-center">
-                                    🔄 Starting up WebSocket connection... This
-                                    may take a few seconds on first load.
+        <div className="min-h-screen bg-background">
+            <Header connected={isConnected} />
+
+            <main className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+                {selectedCoin ? (
+                    /* ── Detail view ── */
+                    <CoinDetailPanel
+                        coin={selectedCoin}
+                        liveData={selectedData}
+                        onClose={() => setSelectedCoin(null)}
+                    />
+                ) : (
+                    /* ── Table view ── */
+                    <>
+                        <div className="mb-8">
+                            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                                Order Book
+                            </h1>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Real-time top-of-book across pairs
+                            </p>
+                        </div>
+
+                        <div className="mb-6">
+                            <CoinFilterBar
+                                activeCoins={activeCoins}
+                                onToggle={toggleCoin}
+                            />
+                        </div>
+
+                        {isError && (
+                            <div className="rounded-lg border border-border px-4 py-10 text-center">
+                                <p className="text-sm text-muted-foreground">
+                                    WebSocket connection failed.
+                                </p>
+                                <button
+                                    onClick={() => refetch()}
+                                    className="mt-4 rounded-lg border border-border px-4 py-2 text-xs text-foreground transition-colors hover:bg-muted"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        )}
+
+                        {!isError && !orderBookData && (
+                            <div className="rounded-lg border border-border px-4 py-16 text-center">
+                                <div className="mx-auto mb-3 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
+                                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                                    Connecting...
                                 </p>
                             </div>
                         )}
-                        <DuoTable
-                            orderBookData={
-                                (orderBookData as OrderBookData[]) || []
-                            }
-                            refetch={refetch}
-                            showDetails={true}
-                        />
-                    </div>
-                ) : (
-                    <ErrorDisplay refetch={refetch} />
+
+                        {!isError && orderBookData && (
+                            <OrderBookTable
+                                data={filtered}
+                                onRefresh={refetch}
+                                refreshInterval={refreshInterval}
+                                onRefreshIntervalChange={setRefreshInterval}
+                                onSelectCoin={setSelectedCoin}
+                            />
+                        )}
+                    </>
                 )}
-            </div>
-        </>
+            </main>
+        </div>
     );
 }

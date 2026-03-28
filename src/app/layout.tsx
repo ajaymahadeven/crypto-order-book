@@ -80,7 +80,10 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`font-sans ${inter.className}`}>
+            <body
+                className={`font-sans ${inter.className}`}
+                suppressHydrationWarning
+            >
                 <ThemeProvider>
                     <TRPCReactProvider>
                         {children}

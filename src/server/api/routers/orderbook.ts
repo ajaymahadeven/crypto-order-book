@@ -4,6 +4,29 @@ import { wsManager } from '~/server/trpc/websocket-manager';
 import { OrderBookSchema } from '~/types/schemas/OrderBookSchema';
 import { TokenSchema } from '~/types/schemas/Token';
 
+const COIN_SYMBOL: Record<string, string> = {
+    'BTC/USD': 'BTC',
+    'ETH/USD': 'ETH',
+    'XRP/USD': 'XRP',
+    'LTC/USD': 'LTC',
+    'DOGE/USD': 'DOGE',
+};
+
+interface CryptoCompareArticle {
+    id: string;
+    title: string;
+    source: string;
+    body: string;
+    url: string;
+    imageurl: string;
+    published_on: number;
+    source_info: { name: string };
+}
+
+interface CryptoCompareNewsResponse {
+    Data: CryptoCompareArticle[];
+}
+
 export const orderBookRouter = createTRPCRouter({
     getOrderBook: publicProcedure.query(async ({ ctx }) => {
         const allData = wsManager.getAllLatestData();
@@ -153,5 +176,31 @@ export const orderBookRouter = createTRPCRouter({
                 spreadPct: spread,
                 snapshots: records.length,
             };
+        }),
+
+    getCoinNews: publicProcedure
+        .input(z.object({ coin: z.string() }))
+        .query(async ({ input }) => {
+            const symbol = COIN_SYMBOL[input.coin];
+            if (!symbol) return [];
+
+            const apiKey = process.env.CRYPTOCOMPARE_API_KEY ?? '';
+            const url = `https://min-api.cryptocompare.com/data/v2/news/?lang=EN&categories=${symbol}&sortOrder=latest${apiKey ? `&api_key=${apiKey}` : ''}`;
+
+            const res = await fetch(url, { next: { revalidate: 300 } });
+            if (!res.ok) return [];
+
+            const json = (await res.json()) as CryptoCompareNewsResponse;
+            const articles = json.Data?.slice(0, 6) ?? [];
+
+            return articles.map((a) => ({
+                id: a.id,
+                title: a.title,
+                source: a.source_info?.name ?? a.source,
+                body: a.body.slice(0, 200),
+                url: a.url,
+                imageUrl: a.imageurl,
+                publishedOn: a.published_on,
+            }));
         }),
 });

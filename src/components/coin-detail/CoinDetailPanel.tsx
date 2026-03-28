@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { api } from '~/trpc/react';
 import type { OrderBookData } from '~/types/interfaces/orderBookData';
 
+import NewsSection from '~/components/coin-detail/NewsSection';
 import DepthRow from '~/components/order-book-table/DepthRow';
 import { getTokenDescription } from '~/data/token/tokenData';
 
@@ -186,6 +187,8 @@ export default function CoinDetailPanel({
                     </div>
                 </div>
             )}
+
+            <NewsSection coin={coin} />
         </div>
     );
 }
